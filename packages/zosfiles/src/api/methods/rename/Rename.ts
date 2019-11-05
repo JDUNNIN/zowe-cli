@@ -68,4 +68,56 @@ export class Rename {
             throw err;
         }
     }
+    /**
+     * Rename a data set member
+     * @param {AbstractSession} session                     - z/OSMF connection info
+     * @param {string} dataSetName                          - the name of the data set the member lies in
+     * @param {string} beforeMemberName                     - the name of the data set member to rename
+     * @param {string} afterMemberName                      - the new name of the data set member
+     * @returns {Promise<IZosFilesResponse>}
+     */
+    public static async dataSetMember(
+        session: AbstractSession,
+        dataSetName: string,
+        beforeMemberName: string,
+        afterMemberName: string,
+    ): Promise<IZosFilesResponse> {
+        ImperativeExpect.toNotBeNullOrUndefined(dataSetName, ZosFilesMessages.missingDatasetName.message);
+        ImperativeExpect.toNotBeEqual(dataSetName, "", ZosFilesMessages.missingDatasetName.message);
+        ImperativeExpect.toNotBeNullOrUndefined(beforeMemberName, ZosFilesMessages.missingDatasetName.message);
+        ImperativeExpect.toNotBeEqual(beforeMemberName, "", ZosFilesMessages.missingDatasetName.message);
+        ImperativeExpect.toNotBeNullOrUndefined(afterMemberName, ZosFilesMessages.missingDatasetName.message);
+        ImperativeExpect.toNotBeEqual(afterMemberName, "", ZosFilesMessages.missingDatasetName.message);
+
+        const endpoint: string = posix.join(
+            ZosFilesConstants.RESOURCE,
+            ZosFilesConstants.RES_DS_FILES,
+            `${dataSetName}(${afterMemberName})`,
+        );
+        Logger.getAppLogger().debug(`Endpoint: ${endpoint}`);
+
+        const payload: any = {
+            "request": "rename",
+            "from-dataset": {
+                dsn: dataSetName,
+                member: beforeMemberName,
+            },
+        };
+
+        const reqHeaders: IHeaderContent[] = [
+            Headers.APPLICATION_JSON,
+            { [Headers.CONTENT_LENGTH]: JSON.stringify(payload).length.toString() },
+        ];
+
+        try {
+            await ZosmfRestClient.putExpectString(session, endpoint, reqHeaders, payload);
+            return {
+                success: true,
+                commandResponse: ZosFilesMessages.dataSetRenamedSuccessfully.message
+            };
+        } catch(err) {
+            Logger.getAppLogger().error(err);
+            throw err;
+        }
+    }
 }
